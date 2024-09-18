@@ -1,0 +1,5 @@
+DEFAULT_INDEX_NAME = "index"
+
+LEVEL_1_NAME = "level_1"
+
+DEFAULT_ID_NAME = "id"
