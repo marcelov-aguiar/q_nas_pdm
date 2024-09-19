@@ -130,82 +130,86 @@ class Controller:
                            metrics=scores,
                            title="Binary Classification - Data Test")
 
-# %%
-#### CONSTANTS ####
-FEATURES_NAME = const_turbofan.FEATURES_NAME
+def main():
+    # %%
+    #### CONSTANTS ####
+    FEATURES_NAME = const_turbofan.FEATURES_NAME
 
-# Features to remove from the dataset
-FEATURES_TO_REMOVE = [const_turbofan.FEATURE_UNIT_NUMBER]
+    # Features to remove from the dataset
+    FEATURES_TO_REMOVE = [const_turbofan.FEATURE_UNIT_NUMBER]
 
-# Features to be normalized
-FEATURES_TO_NORM = const_turbofan.FEATURES_TO_NORMALIZER
+    # Features to be normalized
+    FEATURES_TO_NORM = const_turbofan.FEATURES_TO_NORMALIZER
 
-# Target variable name
-TARGET = const_turbofan.TARGET
+    # Target variable name
+    TARGET = const_turbofan.TARGET
 
-settings = Settings()
+    settings = Settings()
 
-# Create DataLoader to load the dataset from URL
-dataLoader = DataLoaderTrainTest(train_path=const_turbofan.RAW_PATH_FD001_TRAIN,
-                                 test_path=const_turbofan.RAW_PATH_FD001_TEST,
-                                 features_name=FEATURES_NAME)
+    # Create DataLoader to load the dataset from URL
+    dataLoader = DataLoaderTrainTest(train_path=const_turbofan.RAW_PATH_FD001_TRAIN,
+                                     test_path=const_turbofan.RAW_PATH_FD001_TEST,
+                                     features_name=FEATURES_NAME)
 
-# Create PreProcessor for data preprocessing
-preProcessor = EspecificPreprossessorTrainTest(
-    transformers_train=Pipeline([(const_turbofan.CalcRULTrain, CalcRULTrain())]),
-    transformers_test=Pipeline([
-        (const_turbofan.CalcRULTest, 
-         CalcRULTest(rul_calculator=DefaultRULCalculator(),
-                     merger=DataFrameMerger(),
-                     df_rul=DataLoaderFromTXT(
-                         path_dataset_txt=const_turbofan.RAW_PATH_FD001_RUL,
-                         features_name=[const_turbofan.DEFAULT_MAX_NAME]).load_dataset(),
-                     config=RULConfig(
-                         feature_unit_number=const_turbofan.FEATURE_UNIT_NUMBER, 
-                         feature_time=const_turbofan.FEATURE_TIME, 
-                         target=const_turbofan.TARGET, 
-                         default_max_name=const_turbofan.DEFAULT_MAX_NAME, 
-                         total_rul=const_turbofan.TOTAL_RUL)
-         )
-        )
-    ]),
-    features_to_remove=FEATURES_TO_REMOVE,
-    target=TARGET)
+    # Create PreProcessor for data preprocessing
+    preProcessor = EspecificPreprossessorTrainTest(
+        transformers_train=Pipeline([(const_turbofan.CalcRULTrain, CalcRULTrain())]),
+        transformers_test=Pipeline([
+            (const_turbofan.CalcRULTest, 
+             CalcRULTest(rul_calculator=DefaultRULCalculator(),
+                         merger=DataFrameMerger(),
+                         df_rul=DataLoaderFromTXT(
+                             path_dataset_txt=const_turbofan.RAW_PATH_FD001_RUL,
+                             features_name=[const_turbofan.DEFAULT_MAX_NAME]).load_dataset(),
+                         config=RULConfig(
+                             feature_unit_number=const_turbofan.FEATURE_UNIT_NUMBER, 
+                             feature_time=const_turbofan.FEATURE_TIME, 
+                             target=const_turbofan.TARGET, 
+                             default_max_name=const_turbofan.DEFAULT_MAX_NAME, 
+                             total_rul=const_turbofan.TOTAL_RUL)
+             )
+            )
+        ]),
+        features_to_remove=FEATURES_TO_REMOVE,
+        target=TARGET)
 
-models = [
-    GridSearchCVCustom(
-        normalizer = NormStandardScaler(columns_to_norm=FEATURES_TO_NORM),
-        base_model = LightGBMRegressionModel(),
-        param_grid={
-            f'{ModelCV.BASE_MODEL}__n_estimators': [50],
-            f'{ModelCV.BASE_MODEL}__max_depth': [-1],
-            f'{ModelCV.BASE_MODEL}__num_leaves': ['31']
-        },
-        scoring=RegressionEvaluator.R2,
-        cv=KFold(n_splits=5),
-        verbose=1,
-        n_jobs=-1
-    ),
-    # GridSearchCVCustom(
-    #     normalizer = NormStandardScaler(columns_to_norm=FEATURES_TO_NORM),
-    #     base_model = RandomForestRegressionModel(),
-    #     param_grid={
-    #         f'{ModelCV.BASE_MODEL}__n_estimators': [50], # 100, 150],
-    #         f'{ModelCV.BASE_MODEL}__max_depth': [None], #10],  20, 30],
-    #         f'{ModelCV.BASE_MODEL}__criterion': ['absolute_error'] # , 'squared_error']
-    #     },
-    #     scoring=RegressionEvaluator.R2,
-    #     cv=KFold(n_splits=5),
-    #     verbose=1,
-    #     n_jobs=-1
-    # )
-]
+    models = [
+        GridSearchCVCustom(
+            normalizer = NormStandardScaler(columns_to_norm=FEATURES_TO_NORM),
+            base_model = LightGBMRegressionModel(),
+            param_grid={
+                f'{ModelCV.BASE_MODEL}__n_estimators': [50],
+                f'{ModelCV.BASE_MODEL}__max_depth': [-1],
+                f'{ModelCV.BASE_MODEL}__num_leaves': ['31']
+            },
+            scoring=RegressionEvaluator.R2,
+            cv=KFold(n_splits=5),
+            verbose=1,
+            n_jobs=-1
+        ),
+        # GridSearchCVCustom(
+        #     normalizer = NormStandardScaler(columns_to_norm=FEATURES_TO_NORM),
+        #     base_model = RandomForestRegressionModel(),
+        #     param_grid={
+        #         f'{ModelCV.BASE_MODEL}__n_estimators': [50], # 100, 150],
+        #         f'{ModelCV.BASE_MODEL}__max_depth': [None], #10],  20, 30],
+        #         f'{ModelCV.BASE_MODEL}__criterion': ['absolute_error'] # , 'squared_error']
+        #     },
+        #     scoring=RegressionEvaluator.R2,
+        #     cv=KFold(n_splits=5),
+        #     verbose=1,
+        #     n_jobs=-1
+        # )
+    ]
 
-# Create MatPlotter for plotting evaluation metrics
-plotter = MatPlotter()
+    # Create MatPlotter for plotting evaluation metrics
+    plotter = MatPlotter()
 
-# Instantiate the Controller to orchestrate the execution of models
-controller = Controller(dataLoader, preProcessor, models, plotter)
+    # Instantiate the Controller to orchestrate the execution of models
+    controller = Controller(dataLoader, preProcessor, models, plotter)
 
-# Run the Controller to execute data loading, preprocessing, model training, and evaluation
-controller.run()
+    # Run the Controller to execute data loading, preprocessing, model training, and evaluation
+    controller.run()
+
+if __name__ == "__main__":
+    main()
