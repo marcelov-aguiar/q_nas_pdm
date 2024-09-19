@@ -1,12 +1,12 @@
 from typing import List
 import numpy as np
-from data_loader import DataLoader
 import pandas as pd
+from ds_library.data_preprocessing.data_loader.data_loader import DataLoader
 
 
 class DataLoaderFromTXT(DataLoader):
     def __init__(self,
-                 dataset_TXT: str,
+                 path_dataset_txt: str,
                  features_name: List[str]):
         """Reads the CSV file of the dataset
 
@@ -15,7 +15,7 @@ class DataLoaderFromTXT(DataLoader):
         dataset_URL : str
             Dataset URL to be read
         """
-        data = np.loadtxt(dataset_TXT)
+        data = np.loadtxt(path_dataset_txt)
 
         self._dataset = pd.DataFrame(data, columns=features_name)
 

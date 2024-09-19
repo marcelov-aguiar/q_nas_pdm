@@ -1,7 +1,7 @@
-from typing import Dict, Any
+from typing import Dict, Any, Union
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold
 from sklearn.pipeline import Pipeline
 import util
 from ds_library.models.model_cv import ModelCV
@@ -23,7 +23,7 @@ class GridSearchCVCustom(ModelCV):
                  normalizer: Normalizer,
                  param_grid: Dict[str, Any],
                  scoring: str,
-                 cv: StratifiedKFold,
+                 cv: Union[KFold, StratifiedKFold],
                  verbose: int = 0,
                  n_jobs: int = 0) -> None:
         """Initialize the GridSearchCVCustom object.
@@ -56,7 +56,7 @@ class GridSearchCVCustom(ModelCV):
                      scoring=scoring,
                      cv=cv,
                      verbose=verbose,
-                     n_jobs=-n_jobs
+                     n_jobs=n_jobs
         )
 
     def type(self) -> ModelType:

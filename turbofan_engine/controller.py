@@ -12,13 +12,18 @@ from ds_library.graphs.plotter import Plotter
 from ds_library.graphs.matplotter import MatPlotter
 from ds_library.data_preprocessing.normalizer_standard_scaler import NormStandardScaler
 from ds_library.models.regression.random_forest_regression_model import RandomForestRegressionModel
+from ds_library.models.regression.lightgbm_regression_model import LightGBMRegressionModel
 from ds_library.models.model_cv import ModelCV
 from ds_library.models.evaluator.regression_evaluator import RegressionEvaluator
+import ds_library.constants.constants_names as const_names
 from ds_library.data_preprocessing.data_loader.data_loader_from_txt import DataLoaderFromTXT
-from turbofan_engine.data_preprocessing.calc_rul_train import CalcRULTrain
-from turbofan_engine.data_preprocessing.calc_rul_test import CalcRULTest
+from turbofan_engine.data_preprocessing.rul_calculator.calc_rul_train import CalcRULTrain
+from turbofan_engine.data_preprocessing.rul_calculator.calc_rul_test import CalcRULTest
+from turbofan_engine.data_preprocessing.rul_calculator.rul_config import RULConfig
+from turbofan_engine.data_preprocessing.rul_calculator.rul_merge import DataFrameMerger
+from turbofan_engine.data_preprocessing.rul_calculator.rul_calculator import DefaultRULCalculator
 from config.settings import Settings
-import turbofan_engine.constants as const
+import turbofan_engine.constants as const_turbofan
 
 class Controller:
     """Class that orchestrates the execution of a list of models."""
@@ -127,62 +132,77 @@ class Controller:
 
 # %%
 #### CONSTANTS ####
-FEATURES_NAME = const.FEATURES_NAME
+FEATURES_NAME = const_turbofan.FEATURES_NAME
 
 # Features to remove from the dataset
-FEATURES_TO_REMOVE = ["TEL"]
+FEATURES_TO_REMOVE = [const_turbofan.FEATURE_UNIT_NUMBER]
 
 # Features to be normalized
-FEATURES_TO_NORM = ["NDEP", "RENDA", "VBEM", "NPARC", "VPARC", "IDADE", "RESMS", "ENTRADA"]
-
+FEATURES_TO_NORM = const_turbofan.FEATURES_TO_NORMALIZER
 
 # Target variable name
-TARGET = "target"
+TARGET = const_turbofan.TARGET
 
 settings = Settings()
 
 # Create DataLoader to load the dataset from URL
-dataLoader = DataLoaderTrainTest(train_path=const.RAW_PATH_FD001_TRAIN,
-                                 test_path=const.RAW_PATH_FD001_TEST,
+dataLoader = DataLoaderTrainTest(train_path=const_turbofan.RAW_PATH_FD001_TRAIN,
+                                 test_path=const_turbofan.RAW_PATH_FD001_TEST,
                                  features_name=FEATURES_NAME)
 
-
-pipeline_train = Pipeline([(const.CalcRULTrain, CalcRULTrain())])
-
-pipeline_test = Pipeline([(const.CalcRULTest, CalcRULTest(
-    DataLoaderFromTXT(source_path=const.RAW_PATH_FD001_RUL,
-                      features_name=const.DEFAULT_MAX_NAME).load_dataset()
-                      ))
-        ])
-
 # Create PreProcessor for data preprocessing
-preProcessor = EspecificPreprossessorTrainTest(transformers_train=pipeline_train,
-                                               transformers_test=pipeline_test,
-                                               features_to_remove=FEATURES_TO_REMOVE,
-                                               target=TARGET)
-
-# Create StratifiedKFold cross-validator for model evaluation
-stratified_cv = KFold(n_splits=5, shuffle=True, random_state=42)
-
-
-# Create MatPlotter for plotting evaluation metrics
-plotter = MatPlotter()
+preProcessor = EspecificPreprossessorTrainTest(
+    transformers_train=Pipeline([(const_turbofan.CalcRULTrain, CalcRULTrain())]),
+    transformers_test=Pipeline([
+        (const_turbofan.CalcRULTest, 
+         CalcRULTest(rul_calculator=DefaultRULCalculator(),
+                     merger=DataFrameMerger(),
+                     df_rul=DataLoaderFromTXT(
+                         path_dataset_txt=const_turbofan.RAW_PATH_FD001_RUL,
+                         features_name=[const_turbofan.DEFAULT_MAX_NAME]).load_dataset(),
+                     config=RULConfig(
+                         feature_unit_number=const_turbofan.FEATURE_UNIT_NUMBER, 
+                         feature_time=const_turbofan.FEATURE_TIME, 
+                         target=const_turbofan.TARGET, 
+                         default_max_name=const_turbofan.DEFAULT_MAX_NAME, 
+                         total_rul=const_turbofan.TOTAL_RUL)
+         )
+        )
+    ]),
+    features_to_remove=FEATURES_TO_REMOVE,
+    target=TARGET)
 
 models = [
     GridSearchCVCustom(
         normalizer = NormStandardScaler(columns_to_norm=FEATURES_TO_NORM),
-        base_model = RandomForestRegressionModel(),
+        base_model = LightGBMRegressionModel(),
         param_grid={
-            f'{ModelCV.BASE_MODEL}__n_estimators': [50, 100, 150],
-            f'{ModelCV.BASE_MODEL}__max_depth': [None, 10, 20, 30],
-            f'{ModelCV.BASE_MODEL}__criterion': ['gini', 'entropy']
+            f'{ModelCV.BASE_MODEL}__n_estimators': [50],
+            f'{ModelCV.BASE_MODEL}__max_depth': [-1],
+            f'{ModelCV.BASE_MODEL}__num_leaves': ['31']
         },
-        scoring=RegressionEvaluator.RMSE,
-        cv=stratified_cv,
+        scoring=RegressionEvaluator.R2,
+        cv=KFold(n_splits=5),
         verbose=1,
         n_jobs=-1
-    )
+    ),
+    # GridSearchCVCustom(
+    #     normalizer = NormStandardScaler(columns_to_norm=FEATURES_TO_NORM),
+    #     base_model = RandomForestRegressionModel(),
+    #     param_grid={
+    #         f'{ModelCV.BASE_MODEL}__n_estimators': [50], # 100, 150],
+    #         f'{ModelCV.BASE_MODEL}__max_depth': [None], #10],  20, 30],
+    #         f'{ModelCV.BASE_MODEL}__criterion': ['absolute_error'] # , 'squared_error']
+    #     },
+    #     scoring=RegressionEvaluator.R2,
+    #     cv=KFold(n_splits=5),
+    #     verbose=1,
+    #     n_jobs=-1
+    # )
 ]
+
+# Create MatPlotter for plotting evaluation metrics
+plotter = MatPlotter()
 
 # Instantiate the Controller to orchestrate the execution of models
 controller = Controller(dataLoader, preProcessor, models, plotter)

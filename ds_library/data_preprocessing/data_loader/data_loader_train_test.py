@@ -29,10 +29,10 @@ class DataLoaderTrainTest(DataLoader):
         pd.DataFrame
             Dataset in pandas DataFrame format
         """
-        self.df_train = DataLoaderFromTXT(source_path=self.train_path,
+        self.df_train = DataLoaderFromTXT(path_dataset_txt=self.train_path,
                                           features_name=self.features_name).load_dataset()
 
-        self.df_test = DataLoaderFromTXT(source_path=self.test_path,
+        self.df_test = DataLoaderFromTXT(path_dataset_txt=self.test_path,
                                          features_name=self.features_name).load_dataset()
         return self
     
