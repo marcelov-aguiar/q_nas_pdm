@@ -53,6 +53,12 @@ class EspecificPreprossessorTrainTest(PreProcessor):
         for transformer in self._transformers_test:
             df_test = transformer.transform(df_test)
 
+        for feature in self._features_to_remove:
+            if feature in df_train.columns:
+                df_train = df_train.drop(columns=[feature])
+
+            if feature in df_test.columns:
+                df_test = df_test.drop(columns=[feature])
 
         X_train, y_train = \
             TrainTestSplitCustom(list(df_train.columns),

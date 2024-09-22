@@ -25,14 +25,12 @@ def test_series_to_image(sample_data):
                                     window_size=window_size)
     images, targets = transformer.fit_transform(sample_data)
 
-    # Verifique se o número correto de imagens e alvos foi gerado
     expected_images_shape = (len(sample_data) - window_size + 1, len(features_names), window_size)
     expected_targets_shape = (len(sample_data) - window_size + 1,)
     
     assert images.shape == expected_images_shape, f"Expected images shape {expected_images_shape}, but got {images.shape}"
     assert targets.shape == expected_targets_shape, f"Expected targets shape {expected_targets_shape}, but got {targets.shape}"
 
-    # Verifique os valores das primeiras imagens e alvos esperados
     expected_images = [
         [
             [1, 2, 3, 4],

@@ -20,6 +20,8 @@ class DataLoaderTrainTest(DataLoader):
         self.train_path = train_path
         self.test_path = test_path
         self.features_name = features_name
+        self.df_train = None
+        self.df_test = None
 
     def load_dataset(self) -> DataLoader:
         """Load the dataset

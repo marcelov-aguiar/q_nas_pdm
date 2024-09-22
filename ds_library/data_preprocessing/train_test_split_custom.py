@@ -1,9 +1,26 @@
 from typing import List, Tuple
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from abc import ABC, abstractmethod
 
 
-class TrainTestSplitCustom():
+class TrainTestSplit(ABC):
+    """Abstract class that contains operations of a data preprocessor."""
+
+    @abstractmethod
+    def data_split(self, dataset) -> \
+        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Method that returns the data treated and separated into x_train, x_test, y_train,y_test."""
+        pass
+
+    @abstractmethod
+    def separate_feature_and_label(self, dataset) -> \
+        Tuple[pd.DataFrame, pd.DataFrame]:
+        """Method that returns the data treated and separated into x_train, x_test, y_train,y_test."""
+        pass
+
+
+class TrainTestSplitCustom(TrainTestSplit):
     def __init__(self,
                  features: List[str],
                  target: str,

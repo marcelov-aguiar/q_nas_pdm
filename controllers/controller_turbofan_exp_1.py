@@ -22,6 +22,7 @@ from turbofan_engine.data_preprocessing.rul_calculator.calc_rul_test import Calc
 from turbofan_engine.data_preprocessing.rul_calculator.rul_config import RULConfig
 from turbofan_engine.data_preprocessing.rul_calculator.rul_merge import DataFrameMerger
 from turbofan_engine.data_preprocessing.rul_calculator.rul_calculator import DefaultRULCalculator
+from turbofan_engine.data_preprocessing.rul_calculator.rul_filter import RULFilter, RULFilterTwo
 from config.settings import Settings
 import turbofan_engine.constants as const_turbofan
 
@@ -114,7 +115,7 @@ class Controller:
         self._plotter.plot(model_names=model_names,
                            metrics=scores,
                            std_devs=scores_std,
-                           title="Binary Classification - Data Train")
+                           title="Data Train")
 
     def _plot_test_metrics(self):
         """
@@ -128,7 +129,7 @@ class Controller:
 
         self._plotter.plot(model_names=model_names,
                            metrics=scores,
-                           title="Binary Classification - Data Test")
+                           title="Data Test")
 
 def main():
     # %%
@@ -153,7 +154,8 @@ def main():
 
     # Create PreProcessor for data preprocessing
     preProcessor = EspecificPreprossessorTrainTest(
-        transformers_train=Pipeline([(const_turbofan.CalcRULTrain, CalcRULTrain())]),
+        transformers_train=Pipeline([(const_turbofan.CalcRULTrain, CalcRULTrain()),
+                                     (const_turbofan.RULFilter, RULFilter())]),
         transformers_test=Pipeline([
             (const_turbofan.CalcRULTest, 
              CalcRULTest(rul_calculator=DefaultRULCalculator(),
@@ -168,7 +170,8 @@ def main():
                              default_max_name=const_turbofan.DEFAULT_MAX_NAME, 
                              total_rul=const_turbofan.TOTAL_RUL)
              )
-            )
+            ),
+            (const_turbofan.RULFilter, RULFilterTwo())
         ]),
         features_to_remove=FEATURES_TO_REMOVE,
         target=TARGET)

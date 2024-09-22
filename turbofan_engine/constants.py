@@ -74,3 +74,6 @@ FEATURES_TO_NORMALIZER = FEATURES_NAME[1:]
 TARGET: str = "RUL"
 TOTAL_RUL: str = "TOTAL_RUL"
 
+LENGHT_ROI: int = 150
+
+RULFilter: str = "RULFilter"
